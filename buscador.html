@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buscar Lugares</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/estilos.css" />
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="js/index.js"></script>
+  <script>
+    // Detectar ubicación y buscar lugares cercanos
+    async function detectarUbicacion() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          // Mostrar lugares cercanos en el mapa
+          buscarLugares(lat, lon);
+        });
+      } else {
+        alert("Geolocalización no es compatible con este navegador.");
+      }
+    }
+
+    async function buscarLugares(lat, lon) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert("Por favor, inicia sesión primero.");
+        return;
+      }
+
+      const response = await fetch(`http://127.0.0.1:8000/places?lat=${lat}&lon=${lon}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        mostrarLugares(data.places);
+      } else {
+        alert("Error al obtener los lugares cercanos.");
+      }
+    }
+
+    function mostrarLugares(places) {
+      const resultadosDiv = document.getElementById('resultados');
+      resultadosDiv.innerHTML = '';
+
+      places.forEach(place => {
+        const lugarHTML = `<div class="place-item">
+                            <h4>${place.name}</h4>
+                            <p>${place.category} - Rating: ${place.rating}</p>
+                            <p>${place.address}</p>
+                          </div>`;
+        resultadosDiv.innerHTML += lugarHTML;
+      });
+    }
+  </script>
+</head>
+<body class="bg-body fade-in" onload="detectarUbicacion()">
+  <div class="container py-5">
+    <h2 class="text-center mb-4">¿Dónde te encuentras?</h2>
+    <div class="input-group mb-4">
+      <input type="text" id="ubicacion" class="form-control" placeholder="Ingresa tu ubicación" />
+      <button class="btn btn-outline-primary" onclick="buscarLugares()">Buscar</button>
+    </div>
+    <div class="text-center mb-4">
+      <button class="btn btn-outline-secondary mx-1">Comer</button>
+      <button class="btn btn-outline-secondary mx-1">Entretenimiento</button>
+      <button class="btn btn-outline-secondary mx-1">Fiesta</button>
+    </div>
+    <div id="resultados" class="text-center mb-4"></div>
+    <div id="map" style="height: 300px;" class="rounded shadow"></div>
+  </div>
+</body>
+</html>
